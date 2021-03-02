@@ -1,0 +1,25 @@
+[package]
+name = "tiny-skia-display"
+version = "0.1.2"
+authors = ["Florian Blasius <flovanpt@posteo.de>"]
+description = "Implementation of embedded-graphics https://github.com/jamwaffles/embedded-graphics DrawTarget  based on tiny-skia https://github.com/RazrFalcon/tiny-skia."
+repository = "https://github.com/morphUI/tiny-skia-display"
+edition = "2018"
+readme = "README.md"
+license = "MIT"
+keywords = [
+    "graphics",
+    "canvas",
+    "wasm"
+]
+
+[dependencies]
+embedded-graphics = "0.6.2"
+tiny-skia = { git = "https://github.com/RazrFalcon/tiny-skia.git" }
+rusttype = { version = "0.9.2" }
+
+[dev-dependencies]
+orbclient = { git = "https://gitlab.redox-os.org/redox-os/orbclient.git" }
+
+[features]
+# rtype = ["rusttype"]
