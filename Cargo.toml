@@ -1,5 +1,5 @@
 [package]
-name = "tiny-skia-display"
+name = "tiny_skia_display"
 version = "0.1.2"
 authors = ["Florian Blasius <flovanpt@posteo.de>"]
 description = "Implementation of embedded-graphics https://github.com/jamwaffles/embedded-graphics DrawTarget  based on tiny-skia https://github.com/RazrFalcon/tiny-skia."
