@@ -252,7 +252,7 @@ checksum = "af8b08b04175473088b46763e51ee54da5f9a164bc162f615b91bc179dbf15a3"
 [[package]]
 name = "orbclient"
 version = "0.3.31"
-source = "git+https://gitlab.redox-os.org/redox-os/orbclient.git?branch=wasm#9761e9332babab2c4f5a8f1135131d7a7f93eeff"
+source = "git+https://gitlab.redox-os.org/redox-os/orbclient.git?branch=wasm#228541b80171b1edf9ccefa37b648726fec70585"
 dependencies = [
  "libc",
  "raw-window-handle",

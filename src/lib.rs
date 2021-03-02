@@ -189,11 +189,11 @@ where
         let mut pixels = vec![];
 
         for pixel in item {
-            let color: Rgb888 = pixel.1.into();
-            pixels.push(color.b());
-            pixels.push(color.g());
-            pixels.push(color.r());
-            pixels.push(255);
+            let (r, g, b, a) = rgba(pixel.1);
+            pixels.push(r);
+            pixels.push(g);
+            pixels.push(b);
+            pixels.push(a);
         }
 
         self.pix_map.draw_pixmap(
@@ -213,13 +213,27 @@ where
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+fn rgba<C: PixelColor + Into<Rgb888>>(color: C) -> (u8, u8, u8, u8) {
+    let color: Rgb888 = color.into();
+
+    (color.b(), color.g(), color.r(), 255)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn rgba<C: PixelColor + Into<Rgb888>>(color: C) -> (u8, u8, u8, u8) {
+    let color: Rgb888 = color.into();
+
+    (color.r(), color.g(), color.b(), 255)
+}
+
 // converts the given embedded-graphics pixel color to a tiny-skia paint.
 fn convert_color_to_paint<'a, C: PixelColor + Into<Rgb888>>(color: C) -> Paint<'a> {
-    let color: Rgb888 = color.into();
+    let (r, g, b, a) = rgba(color);
 
     let mut paint = Paint::default();
     paint.anti_alias = true;
-    paint.set_color_rgba8(color.b(), color.g(), color.r(), 255);
+    paint.set_color_rgba8(r, g, b, a);
     paint
 }
 

@@ -56,10 +56,7 @@ pub fn start() {
     let color_data =
         unsafe { std::slice::from_raw_parts_mut(window.data_mut().as_mut_ptr() as *mut u8, len) };
 
-    log(format!("{}", display.data().len()));
-    log(format!("{}", len));
-
-    // display.flip(color_data);
+    display.flip(color_data);
 
     window.sync();
 
