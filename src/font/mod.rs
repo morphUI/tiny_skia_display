@@ -2,10 +2,10 @@ use rusttype::OutlineBuilder;
 use tiny_skia::{FillRule, Paint, PathBuilder, Pixmap, Transform};
 
 mod font_style;
-// mod font_text;
+mod font_text;
 
 pub use self::font_style::*;
-// pub use self::font_text::*;
+pub use self::font_text::*;
 
 #[derive(Debug)]
 struct GlyphTracer {

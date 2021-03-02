@@ -14,10 +14,10 @@ use embedded_graphics::{
 };
 
 // #[cfg(feature = "rtype")]
-mod font;
+// mod font;
 
 // #[cfg(feature = "rtype")]
-use font::*;
+// use font::*;
 
 /// This display is based on raqote's `DrawTarget` and is used as draw target for the embedded graphics crate.
 ///
@@ -44,7 +44,7 @@ where
 {
     pix_map: Pixmap,
     size: Size,
-    fonts: HashMap<String, Font>,
+    // fonts: HashMap<String, Font>,
     _pixel_color: PhantomData<C>,
 }
 
@@ -57,7 +57,7 @@ where
         Ok(TinySkiaDisplay {
             pix_map: Pixmap::new(width, height).ok_or("Cannot create tiny-skia Pixmap")?,
             size: Size::new(width, height),
-            fonts: HashMap::new(),
+            // fonts: HashMap::new(),
             _pixel_color: PhantomData::default(),
         })
     }
@@ -95,15 +95,15 @@ where
         surface.copy_from_slice(self.pix_map.data_mut());
     }
 
-    pub fn register_font(&mut self, font_family: &str, font: Font) {
-        self.fonts.insert(font_family.into(), font);
-    }
+    // pub fn register_font(&mut self, font_family: &str, font: Font) {
+    //     self.fonts.insert(font_family.into(), font);
+    // }
 
-    pub fn draw_text(&mut self, text: &str, font_family: &str) {
-        if let Some(font) = self.fonts.get(font_family) {
-            // font.draw_text(text, pix_map, font_size, paint, position)
-        }
-    }
+    // pub fn draw_text(&mut self, text: &str, font_family: &str) {
+    //     if let Some(font) = self.fonts.get(font_family) {
+    //         // font.draw_text(text, pix_map, font_size, paint, position)
+    //     }
+    // }
 }
 
 impl<C> DrawTarget<C> for TinySkiaDisplay<C>
