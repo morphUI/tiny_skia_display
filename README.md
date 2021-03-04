@@ -1,4 +1,6 @@
 # tiny-skia-display
+
+[![Build and test](https://github.com/morphUI/tiny_skia_display/workflows/CI/badge.svg)](https://github.com/morphUI/tiny_skia_display/actions)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 <img alt="tiny-skia-display" src="https://codeberg.org/flovanco/assets/raw/branch/master/raqote-display.png">
