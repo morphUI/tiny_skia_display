@@ -1,4 +1,4 @@
-# tiny-skia-display
+# tiny_skia_-_display
 
 [![Build and test](https://github.com/morphUI/tiny_skia_display/workflows/CI/badge.svg)](https://github.com/morphUI/tiny_skia_display/actions)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -20,11 +20,19 @@ tiny-skia-display = { git = "https://github.com/morphUI/tiny-skia-display" }
 cargo run --example minimal
 ```
 
-To execute the [lvgl](https://github.com/rafaelcaricio/lvgl-rs) example change in the directory `examples/lvgl` and run:
+### Run web example
 
-```shell
-DEP_LV_CONFIG_PATH=`pwd`/include cargo run
-```
+#### Install web toolchain
+
+* Rust standard toolchain `rustup`, `rustc`, `cargo` ([install](https://www.rust-lang.org/tools/install))
+* Rust web assembly toolchain `wasm-pack` ([install](https://rustwasm.github.io/wasm-pack/installer/))
+* JavaScript package manager npm ([install](https://www.npmjs.com/get-npm))
+
+#### Rub example
+
+* Navigate to `examples/minimal` director
+* Run `npm install`
+* Run `npm run serve`
 
 ## Build and run documentation
 
