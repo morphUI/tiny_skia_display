@@ -13,12 +13,6 @@ use embedded_graphics::{
     DrawTarget,
 };
 
-// #[cfg(feature = "rtype")]
-// mod font;
-
-// #[cfg(feature = "rtype")]
-// use font::*;
-
 /// This display is based on raqote's `DrawTarget` and is used as draw target for the embedded graphics crate.
 ///
 /// # Example
@@ -94,16 +88,6 @@ where
     pub fn flip(&mut self, surface: &mut [u8]) {
         surface.copy_from_slice(self.pix_map.data_mut());
     }
-
-    // pub fn register_font(&mut self, font_family: &str, font: Font) {
-    //     self.fonts.insert(font_family.into(), font);
-    // }
-
-    // pub fn draw_text(&mut self, text: &str, font_family: &str) {
-    //     if let Some(font) = self.fonts.get(font_family) {
-    //         // font.draw_text(text, pix_map, font_size, paint, position)
-    //     }
-    // }
 }
 
 impl<C> DrawTarget<C> for TinySkiaDisplay<C>
