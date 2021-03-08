@@ -7,6 +7,7 @@ use embedded_graphics_core::{
     geometry::{Point, Size},
     pixelcolor::*,
     prelude::Dimensions,
+    prelude::*,
     primitives::Rectangle,
     Pixel,
 };
@@ -56,16 +57,7 @@ where
         // let now = SystemTime::now();
 
         for Pixel(p, color) in pixels.into_iter() {
-            let (r, g, b, a) = rgba(color);
-            if p.x >= 0 && p.y >= 0 && p.x < self.size.width as i32 && p.y < self.size.height as i32
-            {
-                let index = (p.y as usize * self.size.width as usize + p.x as usize) * 4;
-
-                self.pix_map.data_mut()[index] = r;
-                self.pix_map.data_mut()[index + 1] = g;
-                self.pix_map.data_mut()[index + 2] = b;
-                self.pix_map.data_mut()[index + 3] = a;
-            }
+            self.draw_pixel(p, color);
         }
 
         // println!("draw_iter: {:?}", now.elapsed());
@@ -109,6 +101,27 @@ where
 
         Ok(())
     }
+
+    fn fill_contiguous<I>(&mut self, area: &Rectangle, colors: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Self::Color>,
+    {
+        // Clamp the rectangle coordinates to the valid range by determining
+        // the intersection of the fill area and the visible display area
+        // by using Rectangle::intersection.
+        let area = area.intersection(&Rectangle::new(Point::zero(), self.size));
+
+        if area.size != Size::zero() {
+            let mut points = area.points();
+            for color in colors {
+                if let Some(point) = points.next() {
+                    self.draw_pixel(point, color);
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl<C> Dimensions for TinySkiaDisplay<C>
@@ -139,6 +152,23 @@ where
         self.pix_map.data()
     }
 
+    pub fn draw_pixel(&mut self, position: Point, color: C) {
+        let (r, g, b, a) = rgba(color);
+
+        if position.x >= 0
+            && position.y >= 0
+            && position.x < self.size.width as i32
+            && position.y < self.size.height as i32
+        {
+            let index = (position.y as usize * self.size.width as usize + position.x as usize) * 4;
+
+            self.pix_map.data_mut()[index] = r;
+            self.pix_map.data_mut()[index + 1] = g;
+            self.pix_map.data_mut()[index + 2] = b;
+            self.pix_map.data_mut()[index + 3] = a;
+        }
+    }
+
     /// Pushes the frame buffer to the given surface and clears the frame buffer.
     pub fn flip(&mut self, surface: &mut [u8]) {
         surface.copy_from_slice(self.pix_map.data_mut());
@@ -163,8 +193,10 @@ fn rgba<C: PixelColor + Into<Rgb888>>(color: C) -> (u8, u8, u8, u8) {
 fn convert_color_to_paint<'a, C: PixelColor + Into<Rgb888>>(color: C) -> Paint<'a> {
     let (r, g, b, a) = rgba(color);
 
-    let mut paint = Paint::default();
-    paint.anti_alias = true;
+    let mut paint = Paint {
+        anti_alias: true,
+        ..Default::default()
+    };
     paint.set_color_rgba8(r, g, b, a);
     paint
 }
