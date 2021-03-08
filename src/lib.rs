@@ -12,7 +12,7 @@ use embedded_graphics_core::{
     Pixel,
 };
 
-// use std::time::SystemTime;
+pub mod font;
 
 /// This display is based on raqote's `DrawTarget` and is used as draw target for the embedded graphics crate.
 ///
