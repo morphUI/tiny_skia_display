@@ -11,6 +11,8 @@ use embedded_graphics_core::{
     Pixel,
 };
 
+// use std::time::SystemTime;
+
 /// This display is based on raqote's `DrawTarget` and is used as draw target for the embedded graphics crate.
 ///
 /// # Example
@@ -36,7 +38,6 @@ where
 {
     pix_map: Pixmap,
     size: Size,
-    // fonts: HashMap<String, Font>,
     _pixel_color: PhantomData<C>,
 }
 
@@ -52,37 +53,28 @@ where
     where
         I: IntoIterator<Item = embedded_graphics_core::Pixel<Self::Color>>,
     {
-        if let Some(mut pix_map) = Pixmap::new(self.size.width, self.size.height) {
-            for Pixel(p, color) in pixels.into_iter() {
-                let (r, g, b, a) = rgba(color);
-                if p.x >= 0
-                    && p.y >= 0
-                    && p.x < self.size.width as i32
-                    && p.y < self.size.height as i32
-                {
-                    let index = (p.y as usize * self.size.width as usize + p.x as usize) * 4;
+        // let now = SystemTime::now();
 
-                    pix_map.data_mut()[index] = r;
-                    pix_map.data_mut()[index + 1] = g;
-                    pix_map.data_mut()[index + 2] = b;
-                    pix_map.data_mut()[index + 3] = a;
-                }
+        for Pixel(p, color) in pixels.into_iter() {
+            let (r, g, b, a) = rgba(color);
+            if p.x >= 0 && p.y >= 0 && p.x < self.size.width as i32 && p.y < self.size.height as i32
+            {
+                let index = (p.y as usize * self.size.width as usize + p.x as usize) * 4;
+
+                self.pix_map.data_mut()[index] = r;
+                self.pix_map.data_mut()[index + 1] = g;
+                self.pix_map.data_mut()[index + 2] = b;
+                self.pix_map.data_mut()[index + 3] = a;
             }
-
-            self.pix_map.draw_pixmap(
-                0,
-                0,
-                pix_map.as_ref(),
-                &PixmapPaint::default(),
-                Transform::identity(),
-                None,
-            );
         }
+
+        // println!("draw_iter: {:?}", now.elapsed());
 
         Ok(())
     }
 
     fn fill_solid(&mut self, area: &Rectangle, color: Self::Color) -> Result<(), Self::Error> {
+        // let now = SystemTime::now();
         // Clamp the rectangle coordinates to the valid range by determining
         // the intersection of the fill area and the visible display area
         // by using Rectangle::intersection.
@@ -112,6 +104,8 @@ where
         } else {
             return Err(String::from("Cannot create tiny-skia rect"));
         }
+
+        // println!("fill_solid: {:?}", now.elapsed());
 
         Ok(())
     }
