@@ -3,13 +3,139 @@ use std::marker::PhantomData;
 use embedded_graphics_core::{
     draw_target::DrawTarget,
     prelude::*,
-    text::{TextMetrics, TextRenderer, VerticalAlignment},
+    text::{CharacterStyle, DecorationColor, TextMetrics, TextRenderer, VerticalAlignment},
 };
 use tiny_skia::{FillRule, Paint, PathBuilder, Pixmap, Transform};
 
 mod glyph_tracer;
 
 pub use self::glyph_tracer::*;
+
+pub struct FontTextStyle<C: PixelColor> {
+    /// Text color.
+    pub text_color: Option<C>,
+
+    /// Background color.
+    pub background_color: Option<C>,
+
+    /// Underline color.
+    pub underline_color: DecorationColor<C>,
+
+    /// Strikethrough color.
+    pub strikethrough_color: DecorationColor<C>,
+
+    /// Font size.
+    pub font_size: u32,
+
+    /// Font.
+    font: Font<C>,
+}
+
+impl<C: PixelColor> FontTextStyle<C> {
+    pub fn new(font: Font<C>, text_color: C, font_size: u32) -> Self {
+        FontTextStyleBuilder::new(font)
+            .text_color(text_color)
+            .font_size(font_size)
+            .build()
+    }
+}
+
+impl<C: PixelColor> CharacterStyle for FontTextStyle<C> {
+    type Color = C;
+
+    fn set_text_color(&mut self, text_color: Option<Self::Color>) {
+        self.text_color = text_color;
+    }
+
+    fn set_background_color(&mut self, background_color: Option<Self::Color>) {
+        self.background_color = background_color;
+    }
+
+    fn set_underline_color(&mut self, underline_color: DecorationColor<Self::Color>) {
+        self.underline_color = underline_color;
+    }
+
+    fn set_strikethrough_color(&mut self, strikethrough_color: DecorationColor<Self::Color>) {
+        self.strikethrough_color = strikethrough_color;
+    }
+}
+
+pub struct FontTextStyleBuilder<C: PixelColor> {
+    style: FontTextStyle<C>,
+}
+
+impl<C: PixelColor> FontTextStyleBuilder<C> {
+    /// Creates a new text style builder.
+    pub fn new(font: Font<C>) -> Self {
+        Self {
+            style: FontTextStyle {
+                font,
+                background_color: None,
+                font_size: 12,
+                text_color: None,
+                underline_color: DecorationColor::None,
+                strikethrough_color: DecorationColor::None,
+            },
+        }
+    }
+
+    pub fn font_size(mut self, font_size: u32) -> Self {
+        self.style.font_size = font_size;
+        self
+    }
+
+    /// Enables underline using the text color.
+    pub fn underline(mut self) -> Self {
+        self.style.underline_color = DecorationColor::TextColor;
+
+        self
+    }
+
+    /// Enables strikethrough using the text color.
+    pub fn strikethrough(mut self) -> Self {
+        self.style.strikethrough_color = DecorationColor::TextColor;
+
+        self
+    }
+
+    /// Sets the text color.
+    pub fn text_color(mut self, text_color: C) -> Self {
+        self.style.text_color = Some(text_color);
+
+        self
+    }
+
+    /// Sets the background color.
+    pub fn background_color(mut self, background_color: C) -> Self {
+        self.style.background_color = Some(background_color);
+
+        self
+    }
+
+    /// Enables underline with a custom color.
+    pub fn underline_with_color(mut self, underline_color: C) -> Self {
+        self.style.underline_color = DecorationColor::Custom(underline_color);
+
+        self
+    }
+
+    /// Enables strikethrough with a custom color.
+    pub fn strikethrough_with_color(mut self, strikethrough_color: C) -> Self {
+        self.style.strikethrough_color = DecorationColor::Custom(strikethrough_color);
+
+        self
+    }
+
+    /// Builds the text style.
+    ///
+    /// This method can only be called after a font was set by using the [`font`] method. All other
+    /// settings are optional and they will be set to their default value if they are missing.
+    ///
+    /// [`font`]: #method.font
+    pub fn build(self) -> FontTextStyle<C> {
+        self.style
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Font<C: PixelColor> {
@@ -93,7 +219,7 @@ impl<C: PixelColor> Font<C> {
     }
 }
 
-impl<C: PixelColor> TextRenderer for Font<C> {
+impl<C: PixelColor> TextRenderer for FontTextStyle<C> {
     type Color = C;
 
     fn draw_string<D>(&self, text: &str, position: Point, target: &mut D) -> Result<Point, D::Error>
@@ -141,6 +267,6 @@ impl<C: PixelColor> TextRenderer for Font<C> {
     }
 
     fn line_height(&self) -> u32 {
-        self.pixel_size
+        self.font_size
     }
 }
