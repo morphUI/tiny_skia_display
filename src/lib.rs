@@ -1,16 +1,14 @@
-use std::{collections::HashMap, marker::PhantomData};
+use std::marker::PhantomData;
 
 use tiny_skia::*;
 
-use embedded_graphics::{
-    drawable::Pixel,
-    geometry::{Dimensions, Size},
-    image::{Image, ImageDimensions},
-    pixelcolor::{PixelColor, Rgb888, RgbColor},
-    prelude::IntoPixelIter,
-    primitives,
-    style::{PrimitiveStyle, Styled},
-    DrawTarget,
+use embedded_graphics_core::{
+    draw_target::*,
+    geometry::{Point, Size},
+    pixelcolor::*,
+    prelude::Dimensions,
+    primitives::Rectangle,
+    Pixel,
 };
 
 /// This display is based on raqote's `DrawTarget` and is used as draw target for the embedded graphics crate.
@@ -42,6 +40,92 @@ where
     _pixel_color: PhantomData<C>,
 }
 
+impl<C> DrawTarget for TinySkiaDisplay<C>
+where
+    C: PixelColor + From<<C as PixelColor>::Raw> + Into<Rgb888>,
+{
+    type Color = C;
+
+    type Error = String;
+
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = embedded_graphics_core::Pixel<Self::Color>>,
+    {
+        if let Some(mut pix_map) = Pixmap::new(self.size.width, self.size.height) {
+            for Pixel(p, color) in pixels.into_iter() {
+                let (r, g, b, a) = rgba(color);
+                if p.x >= 0
+                    && p.y >= 0
+                    && p.x < self.size.width as i32
+                    && p.y < self.size.height as i32
+                {
+                    let index = (p.y as usize * self.size.width as usize + p.x as usize) * 4;
+
+                    pix_map.data_mut()[index] = r;
+                    pix_map.data_mut()[index + 1] = g;
+                    pix_map.data_mut()[index + 2] = b;
+                    pix_map.data_mut()[index + 3] = a;
+                }
+            }
+
+            self.pix_map.draw_pixmap(
+                0,
+                0,
+                pix_map.as_ref(),
+                &PixmapPaint::default(),
+                Transform::identity(),
+                None,
+            );
+        }
+
+        Ok(())
+    }
+
+    fn fill_solid(&mut self, area: &Rectangle, color: Self::Color) -> Result<(), Self::Error> {
+        // Clamp the rectangle coordinates to the valid range by determining
+        // the intersection of the fill area and the visible display area
+        // by using Rectangle::intersection.
+        let area = area.intersection(&Rectangle::new(Point::zero(), self.size));
+
+        // Do not draw rectangle if the intersection size if zero.
+        // The size is checked by using `Rectangle::bottom_right`, which returns `None`
+        // if the size is zero.
+        let bottom_right = if let Some(bottom_right) = area.bottom_right() {
+            bottom_right
+        } else {
+            return Ok(());
+        };
+
+        if let Some(rect) = Rect::from_xywh(
+            area.top_left.x as f32,
+            area.top_left.y as f32,
+            bottom_right.x as f32 - area.top_left.x as f32,
+            bottom_right.y as f32 - area.top_left.y as f32,
+        ) {
+            self.pix_map.fill_rect(
+                rect,
+                &convert_color_to_paint(color),
+                Transform::identity(),
+                None,
+            );
+        } else {
+            return Err(String::from("Cannot create tiny-skia rect"));
+        }
+
+        Ok(())
+    }
+}
+
+impl<C> Dimensions for TinySkiaDisplay<C>
+where
+    C: PixelColor + From<<C as PixelColor>::Raw>,
+{
+    fn bounding_box(&self) -> Rectangle {
+        Rectangle::new(Point::default(), self.size)
+    }
+}
+
 impl<C> TinySkiaDisplay<C>
 where
     C: PixelColor + From<<C as PixelColor>::Raw> + Into<Rgb888>,
@@ -56,29 +140,6 @@ where
         })
     }
 
-    fn fill(&mut self, path: &tiny_skia::Path, color: C) {
-        self.pix_map.fill_path(
-            path,
-            &convert_color_to_paint(color),
-            FillRule::Winding,
-            Transform::identity(),
-            None,
-        );
-    }
-
-    fn stroke(&mut self, path: &tiny_skia::Path, color: C, stroke_width: u32) {
-        let mut stroke = Stroke::default();
-        stroke.width = stroke_width as f32;
-
-        self.pix_map.stroke_path(
-            path,
-            &convert_color_to_paint(color),
-            &stroke,
-            Transform::identity(),
-            None,
-        );
-    }
-
     /// Returns a reference to the underlying pixel data.
     pub fn data(&self) -> &[u8] {
         self.pix_map.data()
@@ -87,113 +148,6 @@ where
     /// Pushes the frame buffer to the given surface and clears the frame buffer.
     pub fn flip(&mut self, surface: &mut [u8]) {
         surface.copy_from_slice(self.pix_map.data_mut());
-    }
-}
-
-impl<C> DrawTarget<C> for TinySkiaDisplay<C>
-where
-    C: PixelColor + From<<C as PixelColor>::Raw> + Into<Rgb888>,
-{
-    type Error = String;
-
-    fn draw_pixel(&mut self, pixel: Pixel<C>) -> Result<(), Self::Error> {
-        self.pix_map.fill_rect(
-            Rect::from_xywh(pixel.0.x as f32, pixel.0.y as f32, 1., 1.)
-                .ok_or("Cannot crate tiny skia Rect.")?,
-            &convert_color_to_paint(pixel.1),
-            Transform::identity(),
-            None,
-        );
-
-        Ok(())
-    }
-
-    fn draw_line(
-        &mut self,
-        item: &Styled<primitives::Line, PrimitiveStyle<C>>,
-    ) -> Result<(), Self::Error> {
-        let path = convert_line_path(item.primitive)?;
-
-        if let Some(fill_color) = item.style.fill_color {
-            self.fill(&path, fill_color);
-        }
-
-        if let Some(stroke_color) = item.style.stroke_color {
-            self.stroke(&path, stroke_color, item.style.stroke_width);
-        }
-
-        Ok(())
-    }
-
-    fn draw_rectangle(
-        &mut self,
-        item: &Styled<primitives::Rectangle, PrimitiveStyle<C>>,
-    ) -> Result<(), Self::Error> {
-        let style = item.style;
-        let rect = convert_rect(item.primitive).ok_or("Cannot create tiny-skia rect.")?;
-        let rect_path = convert_rect_path(item.primitive)?;
-
-        if let Some(fill_color) = style.fill_color {
-            self.pix_map.fill_rect(
-                rect,
-                &convert_color_to_paint(fill_color),
-                Transform::identity(),
-                None,
-            );
-        }
-        if let Some(stroke_color) = style.stroke_color {
-            self.stroke(&rect_path, stroke_color, style.stroke_width)
-        }
-
-        Ok(())
-    }
-
-    fn draw_circle(
-        &mut self,
-        item: &Styled<primitives::Circle, PrimitiveStyle<C>>,
-    ) -> Result<(), Self::Error> {
-        let style = item.style;
-        let circle = convert_circle_path(item.primitive)?;
-
-        if let Some(fill_color) = style.fill_color {
-            self.fill(&circle, fill_color);
-        }
-        if let Some(stroke_color) = style.stroke_color {
-            self.stroke(&circle, stroke_color, item.style.stroke_width);
-        }
-
-        Ok(())
-    }
-
-    fn draw_image<'a, 'b, I>(&mut self, item: &'a Image<'b, I, C>) -> Result<(), Self::Error>
-    where
-        &'b I: IntoPixelIter<C>,
-        I: ImageDimensions,
-    {
-        let mut pixels = vec![];
-
-        for pixel in item {
-            let (r, g, b, a) = rgba(pixel.1);
-            pixels.push(r);
-            pixels.push(g);
-            pixels.push(b);
-            pixels.push(a);
-        }
-
-        self.pix_map.draw_pixmap(
-            item.top_left().x as i32,
-            item.top_left().y as i32,
-            PixmapRef::from_bytes(pixels.as_slice(), item.size().width, item.size().height)
-                .ok_or("Cannot create tiny-skia pixmap.")?,
-            &PixmapPaint::default(),
-            Transform::identity(),
-            None,
-        );
-        Ok(())
-    }
-
-    fn size(&self) -> Size {
-        self.size
     }
 }
 
@@ -219,77 +173,4 @@ fn convert_color_to_paint<'a, C: PixelColor + Into<Rgb888>>(color: C) -> Paint<'
     paint.anti_alias = true;
     paint.set_color_rgba8(r, g, b, a);
     paint
-}
-
-// converts a embedded-graphics rect to a tiny-skia rect.
-fn convert_rect(rect: embedded_graphics::primitives::Rectangle) -> Option<Rect> {
-    let width = (rect.bottom_right.x - rect.top_left.x) as f32;
-    let height = (rect.bottom_right.y - rect.top_left.y) as f32;
-
-    Rect::from_xywh(
-        rect.top_left.x as f32,
-        rect.top_left.y as f32,
-        width,
-        height,
-    )
-}
-
-// converts a embedded-graphics circle to a tuple of circle values.
-fn convert_circle(circle: embedded_graphics::primitives::Circle) -> (f32, f32, f32) {
-    (
-        circle.center.x as f32,
-        circle.center.y as f32,
-        circle.radius as f32,
-    )
-}
-
-// converts a embedded-graphics rect to a tiny-skia rect path.
-fn convert_rect_path(rect: embedded_graphics::primitives::Rectangle) -> Result<Path, String> {
-    Ok(PathBuilder::from_rect(
-        convert_rect(rect).ok_or("Cannot create tiny-skia rect")?,
-    ))
-}
-
-// converts a embedded-graphics circle to a tiny-skia circle path.
-fn convert_circle_path(circle: embedded_graphics::primitives::Circle) -> Result<Path, String> {
-    let circle = convert_circle(circle);
-    Ok(PathBuilder::from_circle(circle.0, circle.1, circle.2)
-        .ok_or("Cannot create tiny-skia circle")?)
-}
-
-// converts a embedded-graphics line to a tiny-skia line path.
-fn convert_line_path(line: embedded_graphics::primitives::Line) -> Result<Path, String> {
-    let mut builder = PathBuilder::new();
-    builder.move_to(line.start.x as f32, line.start.y as f32);
-    builder.line_to(line.end.x as f32, line.end.y as f32);
-    Ok(builder
-        .finish()
-        .ok_or("Cannot create tiny-skia path from line.")?)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_convert_rect() {
-        assert_eq!(
-            Rect::from_xywh(1., 2., 3., 4.),
-            convert_rect(embedded_graphics::primitives::Rectangle::new(
-                embedded_graphics::geometry::Point::new(1, 2),
-                embedded_graphics::geometry::Point::new(4, 6)
-            ))
-        );
-    }
-
-    #[test]
-    fn test_convert_circle() {
-        assert_eq!(
-            (1., 2., 3.),
-            convert_circle(embedded_graphics::primitives::Circle::new(
-                embedded_graphics::geometry::Point::new(1, 2),
-                3
-            ))
-        );
-    }
 }

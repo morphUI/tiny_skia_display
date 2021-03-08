@@ -9,9 +9,9 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = "0.2"
-orbclient = { git = "https://gitlab.redox-os.org/redox-os/orbclient.git", branch = "wasm" }
+orbclient = "0.3.31"
 tiny_skia_display = { path = "../../.." }
-embedded-graphics = "0.6.2"
+embedded-graphics = "0.7.0-alpha.3"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires

@@ -1,19 +1,17 @@
 use wasm_bindgen::prelude::*;
 
 use embedded_graphics::{
-    fonts::{Font8x16, Text},
     image::{Image, ImageRaw, ImageRawLE},
+    mono_font::{ascii::Font8x13Bold, MonoTextStyleBuilder},
     pixelcolor::Rgb565,
     prelude::*,
-    primitives::rectangle::Rectangle,
-    style::{PrimitiveStyleBuilder, TextStyle},
+    primitives::{PrimitiveStyleBuilder, Rectangle},
+    text::Text,
 };
 
 use tiny_skia_display::*;
 
 use orbclient::*;
-
-use std::panic;
 
 #[wasm_bindgen(start)]
 pub fn start() {
@@ -29,17 +27,22 @@ pub fn start() {
     let style = PrimitiveStyleBuilder::new()
         .fill_color(Rgb565::BLACK)
         .build();
-    let black_backdrop = Rectangle::new(Point::new(0, 0), Point::new(160, 128)).into_styled(style);
+    let black_backdrop = Rectangle::new(Point::new(0, 0), Size::new(160, 128)).into_styled(style);
     black_backdrop.draw(&mut display).unwrap();
 
     // draw ferris
     let image_raw: ImageRawLE<Rgb565> =
         ImageRaw::new(include_bytes!("../../../../assets/ferris.raw"), 86, 64);
-    let image: Image<_, Rgb565> = Image::new(&image_raw, Point::new(34, 8));
+    let image = Image::new(&image_raw, Point::new(34, 8));
     image.draw(&mut display).unwrap();
 
-    Text::new("tiny-skia-display!", Point::new(8, 95))
-        .into_styled(TextStyle::new(Font8x16, Rgb565::WHITE))
+    let text_style = MonoTextStyleBuilder::new()
+        .font(Font8x13Bold)
+        .text_color(Rgb565::WHITE)
+        .build();
+
+    Text::new("tiny-skia-display!", Point::new(10, 95))
+        .into_styled(text_style)
         .draw(&mut display)
         .unwrap();
 
