@@ -112,11 +112,13 @@ where
         let area = area.intersection(&Rectangle::new(Point::zero(), self.size));
 
         if area.size != Size::zero() {
-            let mut points = area.points();
-            for color in colors {
-                if let Some(point) = points.next() {
-                    self.draw_pixel(point, color);
-                }
+            for p in area
+                .points()
+                .zip(colors)
+                .filter(|(pos, _color)| area.contains(*pos))
+                .map(|(pos, color)| Pixel(pos, color))
+            {
+                self.draw_pixel(p.0, p.1);
             }
         }
 
