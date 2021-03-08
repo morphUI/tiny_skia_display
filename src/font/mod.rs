@@ -1,3 +1,10 @@
+use std::marker::PhantomData;
+
+use embedded_graphics_core::{
+    draw_target::DrawTarget,
+    prelude::*,
+    text::{TextMetrics, TextRenderer, VerticalAlignment},
+};
 use tiny_skia::{FillRule, Paint, PathBuilder, Pixmap, Transform};
 
 mod glyph_tracer;
@@ -5,14 +12,20 @@ mod glyph_tracer;
 pub use self::glyph_tracer::*;
 
 #[derive(Debug, Clone)]
-pub struct Font {
+pub struct Font<C: PixelColor> {
     inner: rusttype::Font<'static>,
+    pixel_size: u32,
+    _c: PhantomData<C>,
 }
 
-impl Font {
-    pub fn from_bytes(bytes: &'static [u8]) -> Result<Self, &'static str> {
+impl<C: PixelColor> Font<C> {
+    pub fn from_bytes(bytes: &'static [u8], pixel_size: u32) -> Result<Self, &'static str> {
         rusttype::Font::try_from_bytes(bytes)
-            .map(|font| Font { inner: font })
+            .map(|font| Font {
+                inner: font,
+                pixel_size,
+                _c: PhantomData::default(),
+            })
             .ok_or("Could not load font from bytes")
     }
 
@@ -77,5 +90,57 @@ impl Font {
         if let Some(path) = glyph_tracer.path_builder.finish() {
             pix_map.fill_path(&path, paint, FillRule::Winding, Transform::identity(), None);
         }
+    }
+}
+
+impl<C: PixelColor> TextRenderer for Font<C> {
+    type Color = C;
+
+    fn draw_string<D>(&self, text: &str, position: Point, target: &mut D) -> Result<Point, D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
+        todo!()
+    }
+
+    fn draw_whitespace<D>(
+        &self,
+        width: u32,
+        position: Point,
+        target: &mut D,
+    ) -> Result<Point, D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
+        todo!()
+    }
+
+    fn measure_string(&self, text: &str, position: Point) -> TextMetrics {
+        // let scale = rusttype::Scale::uniform(size as f32);
+        // let v_metrics = self.inner.v_metrics(scale);
+        // let offset = rusttype::point(0.0, v_metrics.ascent);
+
+        // let pixel_height = size.ceil();
+
+        // // Glyphs to draw for "RustType". Feel free to try other strings.
+        // let glyphs: Vec<rusttype::PositionedGlyph> =
+        //     self.inner.layout(text, scale, offset).collect();
+
+        // let width = glyphs
+        //     .iter()
+        //     .rev()
+        //     .map(|g| g.position().x as f32 + g.unpositioned().h_metrics().advance_width)
+        //     .next()
+        //     .unwrap_or(0.0)
+        //     .ceil() as f64;
+        todo!()
+    }
+
+    fn vertical_offset(&self, position: Point, vertical_alignment: VerticalAlignment) -> Point {
+        todo!()
+    }
+
+    fn line_height(&self) -> u32 {
+        self.pixel_size
     }
 }
